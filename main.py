@@ -12,6 +12,19 @@ bot = Bot(token="6966014456:AAGGxb9oFUZLltLd5KlED7OsziDT5-ieEE8")
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
+# Создание базы данных
+conn = sqlite3.connect('users.db')
+cursor = conn.cursor()
+
+# Создание таблицы, если ее нет
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users
+    (user_id INTEGER PRIMARY KEY, username TEXT, first_name TEXT, last_name TEXT, birth_date TEXT, birth_place TEXT)
+''')
+
+# Закрытие соединения
+conn.close()
+
 # Определение состояний
 class Registration(StatesGroup):
     birth_date = State()
