@@ -5,7 +5,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton  # Импорт необходимых классов
 from database import add_user, get_all_users, is_user_registered
-
+import sqlite3
 
 # Инициализация бота и диспетчера
 bot = Bot(token="6966014456:AAGGxb9oFUZLltLd5KlED7OsziDT5-ieEE8")
