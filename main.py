@@ -1,18 +1,78 @@
-# Импорт необходимых модулей
 import asyncio
 from aiogram import Bot, Dispatcher, types
-
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton  # Импорт необходимых классов
+from database import add_user, get_all_users, is_user_registered
 
 
 # Инициализация бота и диспетчера
 bot = Bot(token="6966014456:AAGGxb9oFUZLltLd5KlED7OsziDT5-ieEE8")
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
+# Определение состояний
+class Registration(StatesGroup):
+    birth_date = State()
+    birth_place = State()
+
+# Функция старт
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
-    # Отправка приветственного сообщения с фото и новой клавиатурой
-    photo = open('start.jpg', 'rb')
+    # Проверка, зарегистрирован ли пользователь
+    if is_user_registered(message.from_user.id):
+        # Отправка сообщения с кнопками
+        # Отправка фотографии с текстом и клавиатурой
+        markup = InlineKeyboardMarkup()
+        item1 = InlineKeyboardButton("Правила записи", callback_data='booking_rules')
+        item2 = InlineKeyboardButton("Виды консультаций", callback_data='consultation_types')
+        item3 = InlineKeyboardButton("Мои контакты", callback_data='contact')
+        item4 = InlineKeyboardButton("Наш магазин", url='https://t.me/+yzYS0bzE2-liZjFi')  
+        markup.row(item1)
+        markup.row(item2)
+        markup.row(item3)
+        markup.row(item4)
+
+        with open('start.jpg', 'rb') as photo:
+            await bot.send_photo(message.chat.id, photo, caption="Выбирай консультацию!", reply_markup=markup)
+    else:
+        # Отправка приветственного сообщения
+        await bot.send_message(message.chat.id, "Привет, давай зарегистрируем тебя")
+
+        # Запрос даты рождения
+        await bot.send_message(message.chat.id, "Пожалуйста, введите свою дату рождения в формате ДД.ММ.ГГГГ")
+
+        # Переход в состояние birth_date
+        await Registration.birth_date.set()
+
+# Обработка даты рождения
+@dp.message_handler(state=Registration.birth_date)
+async def process_birth_date(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['birth_date'] = message.text
+
+    # Запрос места рождения
+    await bot.send_message(message.chat.id, "Пожалуйста, введите место рождения")
+
+    # Переход в состояние birth_place
+    await Registration.next()
+
+@dp.message_handler(state=Registration.birth_place)
+async def process_birth_place(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['birth_place'] = message.text
+
+    # Добавление пользователя в базу данных
+    add_user(message.from_user.id, message.from_user.username, message.from_user.first_name, message.from_user.last_name, data['birth_date'], data['birth_place'])
+
+    # Завершение машины состояний
+    try:
+        await state.finish()
+    except KeyError:
+        pass
+
+    # Создание кнопок
     markup = InlineKeyboardMarkup()
     item1 = InlineKeyboardButton("Правила записи", callback_data='booking_rules')
     item2 = InlineKeyboardButton("Виды консультаций", callback_data='consultation_types')
@@ -23,20 +83,59 @@ async def start(message: types.Message):
     markup.row(item3)
     markup.row(item4)
 
-    # Получение имени и фамилии пользователя
-    user_name = message.from_user.first_name
-    user_last_name = message.from_user.last_name if message.from_user.last_name else ""
+    # Отправка сообщения с кнопками
+    # Отправка фотографии с текстом и клавиатурой
+    with open('start.jpg', 'rb') as photo:
+        await bot.send_photo(message.chat.id, photo, caption="Отлично! Поздравляю, с успешной регестрацией тебя!\n\nВыбирай консультацию!", reply_markup=markup)
 
-    # Форматирование сообщения с выделением имени и фамилии жирным шрифтом в HTML
-    caption = f"Привет *{user_name} {user_last_name}* \n\nРада приветствовать тебя в своём боте"
+@dp.message_handler(commands=['info'])
+async def process_info(message: types.Message):
+    # Проверка, является ли пользователь админом
+    if message.from_user.id == 2085376749:
+        # Получение списка всех пользователей
+        users = get_all_users()
 
-    message = await bot.send_photo(message.chat.id, photo, caption, parse_mode='MarkdownV2', reply_markup=markup)
-    return message.message_id  # Возвращаем ID сообщения
+        # Формирование сообщения
+        message_text = "Список всех пользователей:\n"
+        
+        counter = 1
+        for user in users:
+            message_text += f"{counter}. ID: *{user.id}*,\n Username: *@{user.username}*,\n Имя: {user.first_name},\n Фамилия: *{user.last_name}*,\n Дата рождения: *{user.birth_date}*,\n Место Рождения: *{user.birth_place}*\n\n"
+            counter += 1
+
+        # Отправка сообщения
+        await bot.send_message(message.chat.id, message_text, parse_mode="Markdown")
+    else:
+        await bot.send_message(message.chat.id, "У вас нет прав для выполнения этой команды.")
+
+@dp.message_handler(content_types=['text'])
+async def send_text(message: types.Message):
+    # Check if the user is an admin
+    if message.from_user.id == 2085376749:
+        # Get the list of all users
+        users = get_all_users()
+
+        # Get the text that the admin sent
+        text = message.text
+
+        # Send the text to all users
+        sent_messages = []
+        for user in users:
+            sent_message = await bot.send_message(chat_id=user.id, text=text)
+            sent_messages.append(sent_message)
+
+        # Delete the messages after a few seconds
+        await asyncio.sleep(600)
+        for sent_message in sent_messages:
+            await bot.delete_message(chat_id=sent_message.chat.id, message_id=sent_message.message_id)
+    else:
+        await bot.send_message(message.chat.id, "У вас нет прав для выполнения этой команды.")
 
 # Функция для редактирования сообщения с фото и клавиатурой
 async def edit_photo_message(chat_id, message_id, new_photo, caption, markup, parse_mode=None):
     await bot.delete_message(chat_id=chat_id, message_id=message_id)  # Удаляем старое сообщение
     await bot.send_photo(chat_id, new_photo, caption=caption, reply_markup=markup, parse_mode=parse_mode)
+
 
 # Функция для обработки кнопки "Мой контакт"
 @dp.callback_query_handler(lambda query: query.data == 'contact')
@@ -45,12 +144,10 @@ async def handle_contact(callback_query: types.CallbackQuery):
 
     markup = InlineKeyboardMarkup()
     astrolog_button = InlineKeyboardButton("Телеграм", url='https://t.me/anasteiiisha12')
-    channel_button = InlineKeyboardButton("Телеграм канал", url='https://t.me/anasteiiisha12')
     insta_button = InlineKeyboardButton("Instagram", url='https://www.instagram.com/nastya_shvetsova12')
     back_button = InlineKeyboardButton("Назад", callback_data='back_to_main')
     markup.row(astrolog_button)
     markup.row(insta_button)
-    markup.row(channel_button)
     markup.row(back_button)
 
     await edit_photo_message(
@@ -127,6 +224,10 @@ async def handle_consultation_types(callback_query: types.CallbackQuery):
         markup=markup
     )
 
+class UserState(StatesGroup):
+    consultation_name = State()
+
+state = UserState.consultation_name
 
 # Функция для обработки кнопок уровней консультаций
 @dp.callback_query_handler(lambda query: query.data.startswith('level_'))
@@ -168,7 +269,7 @@ async def handle_consultation_levels(callback_query: types.CallbackQuery):
     # Создание кнопок для уровней консультаций
     markup = InlineKeyboardMarkup()
     back_button = InlineKeyboardButton("Назад", callback_data='back_to_consultation_types')
-    book_button = InlineKeyboardButton("Записаться", url='https://t.me/anasteiiisha12')
+    book_button = InlineKeyboardButton("Записаться", callback_data='book')
     markup.row(back_button, book_button)
 
     # Получение названия консультации из словаря
@@ -182,6 +283,36 @@ async def handle_consultation_levels(callback_query: types.CallbackQuery):
         markup=markup,
         parse_mode='MarkdownV2'
     )
+
+    await dp.current_state(chat=callback_query.message.chat.id, user=callback_query.from_user.id).update_data(consultation_name=consultation_name)
+
+@dp.callback_query_handler(lambda query: query.data == 'book')
+async def process_callback_book(callback_query: types.CallbackQuery, state: FSMContext):
+    # Get the user's information
+    user_id = callback_query.from_user.id
+    user_name = callback_query.from_user.full_name
+    user_username = callback_query.from_user.username
+
+    # Get the consultation the user chose
+    data = await state.get_data()
+    consultation = data.get('consultation_name', 'Неизвестная консультация')
+
+    # Answer the callback query
+    # Send the message
+    message = await bot.send_message(callback_query.from_user.id, text="*Отлично! Я получила твою запись\nСкоро с тобой свяжусь!*", parse_mode='Markdown')
+
+    # Schedule the message to be deleted after 10 seconds
+    await asyncio.sleep(10)
+    await bot.delete_message(callback_query.from_user.id, message.message_id)
+
+    # Send the user's information and the consultation to the admin
+    admin_id = 2085376749  # Replace with your admin's ID
+    admin_message = f"Пользователь *{user_name}*\n*@{user_username}*\n\n выбрал консультацию: *{consultation}*"
+    await bot.send_message(chat_id=admin_id, text=admin_message, parse_mode='Markdown')
+
+    # Answer the callback query
+    await bot.answer_callback_query(callback_query.id)
+    
 
 # Функция для кнопки "Назад" из уровней консультаций
 @dp.callback_query_handler(lambda query: query.data == 'back_to_consultation_types')
@@ -259,4 +390,5 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.create_task(dp.start_polling())
     loop.run_forever()
+
 
