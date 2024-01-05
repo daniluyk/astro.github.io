@@ -9,7 +9,7 @@ import sqlite3
 import os
 
 # Инициализация бота и диспетчера
-bot = Bot(token="6267181235:AAGe1hj_LlqVEAbjhW0c067X7OeyOzyMGNE")
+bot = Bot(token="6966014456:AAGGxb9oFUZLltLd5KlED7OsziDT5-ieEE8")
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
