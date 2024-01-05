@@ -441,8 +441,12 @@ async def process_callback_book(callback_query: types.CallbackQuery, state: FSMC
     await bot.send_message(chat_id=admin_id, text=admin_message, parse_mode='Markdown')
 
     # Answer the callback query
-    await bot.answer_callback_query(callback_query.id)
-
+    try:
+        await bot.answer_callback_query(callback_query.id)
+    except aiogram.utils.exceptions.InvalidQueryID:
+        # Обработка ошибки
+        pass
+        
 # Функция для кнопки "Назад" из уровней консультаций
 @dp.callback_query_handler(lambda query: query.data == 'back_to_consultation_types')
 async def handle_back_to_consultation_types(callback_query: types.CallbackQuery):
