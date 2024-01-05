@@ -189,9 +189,11 @@ async def delete_message_after_delay(message_id, chat_id):
     # Ждем 10 минут
     await asyncio.sleep(600)
 
-    # Удаляем сообщение
-    await bot.delete_message(chat_id=chat_id, message_id=message_id)
-
+    try:
+        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except aiogram.utils.exceptions.MessageToDeleteNotFound:
+        pass
+        
 @dp.callback_query_handler(lambda c: c.data == 'user_number')
 async def process_callback(callback_query: types.CallbackQuery):
     # Проверка, является ли пользователь админом
@@ -372,7 +374,7 @@ async def handle_consultation_levels(callback_query: types.CallbackQuery):
         'year': {'image_path': 'consult/year.jpg', 'description': '*Стоимость 1990 Руб*'},
         '3month': {'image_path': 'consult/3month.jpg', 'description': '*Стоимость 1990 Руб*'},
         'dreem': {'image_path': 'consult/dreem.jpg', 'description': '*Стоимость 790 Руб*'},
-        'map': {'image_path': 'consult/map.jpg', 'description': '*Стоимость 3490 Руб*'},
+        'map': {'image_path': 'consult/map.jpg', 'description': '*Стоимость 2990 Руб*'},
         'baby': {'image_path': 'consult/baby.jpg', 'description': '*Стоимость 1990 Руб*'},
         'love': {'image_path': 'consult/love.jpg', 'description': '*Стоимость 2490 Руб*'},
         'money': {'image_path': 'consult/money.jpg', 'description': '*Стоимость 2490 Руб*'},
