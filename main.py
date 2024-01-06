@@ -7,6 +7,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton  # Импорт необходимых классов
 from database import add_user, get_all_users, is_user_registered, get_user_info
 import sqlite3
+from aiogram.utils.exceptions import ChatNotFound
 import os
 
 # Инициализация бота и диспетчера
