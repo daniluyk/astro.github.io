@@ -57,7 +57,7 @@ async def start(message: types.Message):
         await bot.send_sticker(message.chat.id, "CAACAgIAAxkBAAELF2BllwbgQNjS8m89jXLUhil9UTJrJAACAQEAAladvQoivp8OuMLmNDQE")
 
         # Запрос даты рождения
-        await bot.send_message(message.chat.id, "Пожалуйста, введите свою дату рождения и точное время в формате\n\n*(ДД.ММ.ГГГГ ЧЧ:ММ)\n(12.12.2000 12:12)*", parse_mode="Markdown")
+        await bot.send_message(message.chat.id, "Пожалуйста, введите свою дату рождения и точное время в формате\n\n*(ДД.ММ.ГГГГ ЧЧ:ММ)\n(12.12.2000 12:12)\n\nВажно! Указывай точное время рождения! Если ты укажешь другое, я не смогу на 100% ручаться за точность консультации*", parse_mode="Markdown")
 
         # Переход в состояние birth_date
         await Registration.birth_date.set()
