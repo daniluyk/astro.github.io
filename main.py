@@ -33,34 +33,95 @@ class Registration(StatesGroup):
     birth_date = State()
     birth_place = State()
 
+async def is_user_subscribed(user_id, channel_id):
+    try:
+        member = await bot.get_chat_member(chat_id=channel_id, user_id=user_id)
+        if member.status in ['left', 'kicked']:
+            return False
+        else:
+            return True
+    except ChatNotFound:
+        print(f"Chat with id {channel_id} not found")
+        return False
+    
 # Функция старт
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
-    # Проверка, зарегистрирован ли пользователь
-    if is_user_registered(message.from_user.id):
-        # Отправка сообщения с кнопками
-        # Отправка фотографии с текстом и клавиатурой
+    channel_id = -1002060801138  # Замените на ваш chat_id канала
+    user_id = message.from_user.id
+
+    if await is_user_subscribed(user_id, channel_id):# Проверка, зарегистрирован ли пользователь
+        if is_user_registered(message.from_user.id):
+            # Отправка сообщения с кнопками
+            # Отправка фотографии с текстом и клавиатурой
+            markup = InlineKeyboardMarkup()
+            item1 = InlineKeyboardButton("Правила записи", callback_data='booking_rules')
+            item2 = InlineKeyboardButton("Виды консультаций", callback_data='consultation_types')
+            item3 = InlineKeyboardButton("Мои контакты", callback_data='contact')
+            item4 = InlineKeyboardButton("Мой канал", url='https://t.me/+yzYS0bzE2-liZjFi')  
+            markup.row(item1)
+            markup.row(item2)
+            markup.row(item3)
+            markup.row(item4)
+
+            with open('bot/start.jpg', 'rb') as photo:
+                await bot.send_photo(message.chat.id, photo, caption="Выбирай консультацию!", reply_markup=markup)
+        else:
+            # Отправка приветственного сообщения
+            await bot.send_sticker(message.chat.id, "CAACAgIAAxkBAAELF2BllwbgQNjS8m89jXLUhil9UTJrJAACAQEAAladvQoivp8OuMLmNDQE")
+
+            # Запрос даты рождения
+            await bot.send_message(message.chat.id, "Пожалуйста, введите свою дату рождения и точное время в формате\n\n*(ДД.ММ.ГГГГ ЧЧ:ММ)\n(12.12.2000 12:12)*", parse_mode="Markdown")
+
+            # Переход в состояние birth_date
+            await Registration.birth_date.set()
+    else:
         markup = InlineKeyboardMarkup()
-        item1 = InlineKeyboardButton("Правила записи", callback_data='booking_rules')
-        item2 = InlineKeyboardButton("Виды консультаций", callback_data='consultation_types')
-        item3 = InlineKeyboardButton("Мои контакты", callback_data='contact')
-        item4 = InlineKeyboardButton("Мой канал", url='https://t.me/+yzYS0bzE2-liZjFi')  
+        item1 = InlineKeyboardButton("Подписаться", url='https://t.me/+yzYS0bzE2-liZjFi')
+        item2 = InlineKeyboardButton("Подписалась", callback_data='start_sub')
         markup.row(item1)
         markup.row(item2)
-        markup.row(item3)
-        markup.row(item4)
+        await bot.send_message(message.chat.id, "Подпишитесь на канал, чтобы продолжить регистрацию\nПосле подписки, нажмите\n*'Подписалась'*", reply_markup=markup, parse_mode="Markdown")
+        await bot.delete_message(message.chat.id, message.message_id)
 
-        with open('bot/start.jpg', 'rb') as photo:
-            await bot.send_photo(message.chat.id, photo, caption="Выбирай консультацию!", reply_markup=markup)
+@dp.callback_query_handler(lambda query: query.data == 'start_sub')
+async def handle_start_sub(callback_query: types.CallbackQuery):
+    channel_id = -1002060801138  # Замените на ваш chat_id канала
+    user_id = callback_query.from_user.id
+
+    if await is_user_subscribed(user_id, channel_id):# Проверка, зарегистрирован ли пользователь
+        if is_user_registered(user_id):
+            # Отправка сообщения с кнопками
+            # Отправка фотографии с текстом и клавиатурой
+            markup = InlineKeyboardMarkup()
+            item1 = InlineKeyboardButton("Правила записи", callback_data='booking_rules')
+            item2 = InlineKeyboardButton("Виды консультаций", callback_data='consultation_types')
+            item3 = InlineKeyboardButton("Мои контакты", callback_data='contact')
+            item4 = InlineKeyboardButton("Мой канал", url='https://t.me/+yzYS0bzE2-liZjFi')  
+            markup.row(item1)
+            markup.row(item2)
+            markup.row(item3)
+            markup.row(item4)
+
+            with open('bot/start.jpg', 'rb') as photo:
+                await bot.send_photo(user_id, photo, caption="Выбирай консультацию!", reply_markup=markup)
+        else:
+            # Отправка приветственного сообщения
+            await bot.send_sticker(user_id, "CAACAgIAAxkBAAELF2BllwbgQNjS8m89jXLUhil9UTJrJAACAQEAAladvQoivp8OuMLmNDQE")
+
+            # Запрос даты рождения
+            await bot.send_message(user_id, "Пожалуйста, введите свою дату рождения и точное время в формате\n\n*(ДД.ММ.ГГГГ ЧЧ:ММ)\n(12.12.2000 12:12)*", parse_mode="Markdown")
+
+            # Переход в состояние birth_date
+            await Registration.birth_date.set()
     else:
-        # Отправка приветственного сообщения
-        await bot.send_sticker(message.chat.id, "CAACAgIAAxkBAAELF2BllwbgQNjS8m89jXLUhil9UTJrJAACAQEAAladvQoivp8OuMLmNDQE")
-
-        # Запрос даты рождения
-        await bot.send_message(message.chat.id, "Пожалуйста, введите свою дату рождения и точное время в формате\n\n*(ДД.ММ.ГГГГ ЧЧ:ММ)\n(12.12.2000 12:12)\n\nВажно! Указывай точное время рождения! Если ты укажешь другое, я не смогу на 100% ручаться за точность консультации*", parse_mode="Markdown")
-
-        # Переход в состояние birth_date
-        await Registration.birth_date.set()
+        markup = InlineKeyboardMarkup()
+        item1 = InlineKeyboardButton("Подписаться", url='https://t.me/+yzYS0bzE2-liZjFi')
+        item2 = InlineKeyboardButton("Подписалась", callback_data='start_sub')
+        markup.row(item1)
+        markup.row(item2)
+        await bot.send_message(user_id, "Подпишись на мой канал, чтобы получить скидку 10% на первую консультацию!\nПосле подписки, нажми\n*'Подписалась'*", reply_markup=markup, parse_mode="Markdown")
+        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
 
 # Обработка даты рождения
 @dp.message_handler(state=Registration.birth_date)
