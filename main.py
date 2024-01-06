@@ -72,7 +72,7 @@ async def start(message: types.Message):
             await bot.send_sticker(message.chat.id, "CAACAgIAAxkBAAELF2BllwbgQNjS8m89jXLUhil9UTJrJAACAQEAAladvQoivp8OuMLmNDQE")
 
             # Запрос даты рождения
-            await bot.send_message(message.chat.id, "Пожалуйста, введите свою дату рождения и точное время в формате\n\n*(ДД.ММ.ГГГГ ЧЧ:ММ)\n(12.12.2000 12:12)*", parse_mode="Markdown")
+            await bot.send_message(message.chat.id, "Пожалуйста, введите свою дату рождения и точное время в формате\n\n*(ДД.ММ.ГГГГ ЧЧ:ММ)\n(12.12.2000 12:12)\n\nВАЖНО! Указывай точное время рождения, в противном случае, я не смогу нести ответсвенность за 100% качество консультаций*", parse_mode="Markdown")
 
             # Переход в состояние birth_date
             await Registration.birth_date.set()
@@ -111,7 +111,7 @@ async def handle_start_sub(callback_query: types.CallbackQuery):
             await bot.send_sticker(user_id, "CAACAgIAAxkBAAELF2BllwbgQNjS8m89jXLUhil9UTJrJAACAQEAAladvQoivp8OuMLmNDQE")
 
             # Запрос даты рождения
-            await bot.send_message(user_id, "Пожалуйста, введите свою дату рождения и точное время в формате\n\n*(ДД.ММ.ГГГГ ЧЧ:ММ)\n(12.12.2000 12:12)*", parse_mode="Markdown")
+            await bot.send_message(user_id, "Пожалуйста, введите свою дату рождения и точное время в формате\n\n*(ДД.ММ.ГГГГ ЧЧ:ММ)\n(12.12.2000 12:12)\n\nВАЖНО! Указывай точное время рождения, в противном случае, я не смогу нести ответсвенность за 100% качество консультаций*", parse_mode="Markdown")
 
             # Переход в состояние birth_date
             await Registration.birth_date.set()
@@ -164,7 +164,7 @@ async def process_birth_place(message: types.Message, state: FSMContext):
     # Отправка сообщения с кнопками
     # Отправка фотографии с текстом и клавиатурой
     with open('bot/start.jpg', 'rb') as photo:
-        await bot.send_photo(message.chat.id, photo, caption="Отлично! Поздравляю, с успешной регистрацией тебя!\n\nМеня зовут *Анастасия*\nЯ *сертифицированный* астролог.\n\n*Моя цель* - помочь тебе разобраться в себе, открыть новые грани личности и стать еще лучше\n\n*Кстати!\nЗа подписку на канал, скидка 10% на первую консультацию*", reply_markup=markup, parse_mode="Markdown")
+        await bot.send_photo(message.chat.id, photo, caption="Отлично! Поздравляю, с успешной регистрацией тебя!\n\nМеня зовут *Анастасия*\nЯ *сертифицированный* астролог.\n\n*Моя цель* - помочь тебе разобраться в себе, открыть новые грани личности и стать еще лучше", reply_markup=markup, parse_mode="Markdown")
 
 # Обработчик нажатия на кнопку "Назад"
 @dp.callback_query_handler(lambda c: c.data == 'back_admin')
